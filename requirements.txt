@@ -1,0 +1,4 @@
+SQLAlchemy<=0.7.99
+GeoAlchemy
+psycopg2
+Shapely
