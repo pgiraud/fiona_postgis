@@ -38,7 +38,25 @@ from shapely.geometry import mapping
 import fiona
 from fiona import collection
 
+import sqlalchemy
+
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+
+def _col_type_mapping(cls):
+    if isinstance(cls, sqlalchemy.types.CHAR) or \
+       isinstance(cls, sqlalchemy.types.VARCHAR):
+        # TODO manage string length
+        return 'str'
+    elif isinstance(cls, sqlalchemy.types.INTEGER):
+        return 'int'
+    elif isinstance(cls, sqlalchemy.types.FLOAT) or \
+         isinstance(cls, sqlalchemy.dialects.postgresql.base.DOUBLE_PRECISION):
+        return 'float'
+    else:
+        print type(cls)
+        return 'str'
+
+
 
 # create the schema
 schema = {'properties': []}
@@ -53,7 +71,7 @@ for p in class_mapper(Ecole).iterate_properties:
             print col
         elif not col.foreign_keys:
             # TODO use col.type
-            properties.append((p.key, 'str'))
+            properties.append((p.key, _col_type_mapping(col.type)))
 
 with fiona.open(
     '/tmp/test_fiona.tab',
@@ -66,7 +84,6 @@ with fiona.open(
         f['geometry'] = mapping(geom)
         f['properties'] = {}
         for p in properties:
-            print p[0]
             f['properties'][p[0]] = getattr(row, p[0])
         sink.write(f)
         logging.info("Write done")
